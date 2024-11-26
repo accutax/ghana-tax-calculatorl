@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghana Tax Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .calculator-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .total {
+            font-weight: bold;
+            color: #4CAF50;
+            border-top: 2px solid #4CAF50;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <h1>Ghana Tax Calculator</h1>
+        <form id="taxForm">
+            <div class="form-group">
+                <label for="taxYear">Tax Year</label>
+                <select id="taxYear" required>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="basicIncome">Monthly Basic Income (GH₵)</label>
+                <input type="number" id="basicIncome" required min="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="allowances">Monthly Allowances (GH₵)</label>
+                <input type="number" id="allowances" value="0" min="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="taxRelief">Tax Relief (GH₵)</label>
+                <input type="number" id="taxRelief" value="0" min="0" step="0.01">
+            </div>
+            <button type="submit">Calculate Tax</button>
+        </form>
+        <div id="results" class="results" style="display: none;">
+            <h2>Results</h2>
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const taxBrackets2024 = [
+            { threshold: 402, rate: 0 },
+            { threshold: 550, rate: 5 },
+            { threshold: 670, rate: 10 },
+            { threshold: 3000, rate: 17.5 },
+            { threshold: 16461, rate: 25 },
+            { threshold: Infinity, rate: 30 }
+        ];
+
+        function calculateTax(taxableIncome) {
+            let remainingIncome = taxableIncome;
+            let totalTax = 0;
+            let previousThreshold = 0;
+
+            taxBrackets2024.forEach(bracket => {
+                const taxableAmount = Math.min(
+                    remainingIncome,
+                    bracket.threshold - previousThreshold
+                );
+                totalTax += (taxableAmount * bracket.rate) / 100;
+                remainingIncome -= taxableAmount;
+                previousThreshold = bracket.threshold;
+            });
+
+            return totalTax;
+        }
+
+        document.getElementById('taxForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const basicIncome = parseFloat(document.getElementById('basicIncome').value) || 0;
+            const allowances = parseFloat(document.getElementById('allowances').value) || 0;
+            const taxRelief = parseFloat(document.getElementById('taxRelief').value) || 0;
+
+            const grossIncome = basicIncome + allowances;
+            const ssnitContribution = basicIncome * 0.055; // 5.5% SSNIT
+            const taxableIncome = grossIncome - ssnitContribution - taxRelief;
+            const payeTax = calculateTax(taxableIncome);
+            const netIncome = grossIncome - ssnitContribution - payeTax;
+
+            const resultsHTML = `
+                <div class="result-item">
+                    <span>Gross Income:</span>
+                    <span>GH₵ ${grossIncome.toFixed(2)}</span>
+                </div>
+                <div class="result-item">
+                    <span>SSNIT Contribution:</span>
+                    <span>GH₵ ${ssnitContribution.toFixed(2)}</span>
+                </div>
+                <div class="result-item">
+                    <span>Taxable Income:</span>
+                    <span>GH₵ ${taxableIncome.toFixed(2)}</span>
+                </div>
+                <div class="result-item">
+                    <span>PAYE Tax:</span>
+                    <span>GH₵ ${payeTax.toFixed(2)}</span>
+                </div>
+                <div class="result-item total">
+                    <span>Net Income:</span>
+                    <span>GH₵ ${netIncome.toFixed(2)}</span>
+                </div>
+            `;
+
+            document.getElementById('resultsContent').innerHTML = resultsHTML;
+            document.getElementById('results').style.display = 'block';
+        });
+    </script>
+</body>
+</html>
